@@ -807,11 +807,11 @@ const SetStartDatetimeButton = React.useMemo(() => {
                 interval_ = 365*24*3600;
                 break;          
             };
-            interval_ = rangeStartTime+(interval_*1000*rangeInterval);
+            var endTime_ = rangeStartTime+(interval_*1000*rangeInterval);
             setStartTimeForStep(rangeStartTime)
             setStartTimeForStepByDragging(rangeStartTime)
-            setEndTimeForStep(interval_); 
-            setEndTimeForStepByDragging(interval_)
+            setEndTimeForStep(endTime_); 
+            setEndTimeForStepByDragging(endTime_)
           }}
         >
           Apply
