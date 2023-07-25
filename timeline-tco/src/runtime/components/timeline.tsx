@@ -108,7 +108,7 @@ function TimeLine (props: TimelineProps) {
   // }, [rangeUnit])
 
   
-  const [rangeInterval, setRangeInterval] = React.useState(10)
+  const [rangeInterval, setRangeInterval] = React.useState(1)
 
   const [speed, setSpeed] = React.useState(_speed)
   React.useEffect(() => {
@@ -116,7 +116,6 @@ function TimeLine (props: TimelineProps) {
   }, [_speed])
 
   React.useEffect(() => {
-    debugger;;
     setRangeStartTime(startTime);
   }, [startTime])
 
@@ -251,7 +250,6 @@ function TimeLine (props: TimelineProps) {
     setShowStartDatetimePopper(false)
     setLeftPosition(0)
     setZoomLevel(0)
-    setRangeInterval(10)
     setAutoPlay(_autoPlay)
     setEndTimeForTempStep(null)
     setStartTimeForStep(startTime)
@@ -748,7 +746,6 @@ const SetStartDatetimeButton = React.useMemo(() => {
               }else{
                 alert("selected date out of range!")
               }
-              
             }}
             selectedDate={new Date(rangeStartTime)}
             showDoneButton
@@ -766,7 +763,9 @@ const SetStartDatetimeButton = React.useMemo(() => {
         <Label check className='d-flex align-items-center'>
           <h6 className='flex-grow-1 mb-0 mr-1'>Interval:</h6>
           <div style={{display: 'flex', gap: '10px'}}>
-              <NumericInput style={{ marginTop:'3px', width:'140px'}} defaultValue="10" size="sm" />
+              <NumericInput value={rangeInterval}
+              onChange={(value) => {setRangeInterval(value)}}
+              style={{ marginTop:'3px', width:'140px'}} defaultValue="10" size="sm" />
               <Dropdown> 
               <DropdownButton>
                 {rangeUnit}
@@ -807,6 +806,7 @@ const SetStartDatetimeButton = React.useMemo(() => {
                 interval_ = 365*24*3600;
                 break;          
             };
+            debugger;
             var endTime_ = rangeStartTime+(interval_*1000*rangeInterval);
             setStartTimeForStep(rangeStartTime)
             setStartTimeForStepByDragging(rangeStartTime)
