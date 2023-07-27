@@ -35,7 +35,7 @@ import { SpeedOutlined } from 'jimu-icons/outlined/application/speed'
 import { TimeSpeed, TimeStyle } from '../../config'
 import { getTimelineStyles } from './style'
 import { DATE_PATTERN, SPEED_VALUE_PAIR, TIME_PATTERN } from '../../utils/utils'
-
+import { RepairFilled } from 'jimu-icons/filled/editor/repair'
 const arrowIcon = require('./assets/icons/arrow.svg')
 const allDefaultMessages = Object.assign({}, defaultMessages, jimuCoreMessages, jimuUIMessages)
 
@@ -720,7 +720,7 @@ const SetStartDatetimeButton = React.useMemo(() => {
   //const endLabel = dateUtils.formatDateLocally(endTime, intl, DATE_PATTERN, TIME_PATTERN)
   return <React.Fragment>
     <Button icon type='tertiary' onClick={evt => { setShowStartDatetimePopper(!showStartDatetimePopper) }} ref={ref => { startDatetimeIconRef.current = ref }}>
-      <EventOutlined />
+      <RepairFilled />
     </Button>
     <Popper
       open={showStartDatetimePopper}
@@ -809,13 +809,13 @@ const SetStartDatetimeButton = React.useMemo(() => {
             var endTime_ = rangeStartTime+(interval_*1000*rangeInterval);
             setStartTimeForStep(rangeStartTime)
             setEndTimeForStep(endTime_); 
+            setShowStartDatetimePopper(false)
           }}
         >
           Apply
         </Button>        
       </div>
     </Popper>
-
     </React.Fragment>
 }, [messages, startTime, endTime,rangeInterval,rangeUnit, rangeStartTime, showStartDatetimePopper])
 
@@ -943,6 +943,7 @@ const SetStartDatetimeButton = React.useMemo(() => {
             <div className='timeline-header'>
               {InfoButton}
               <div className='range-label' dir={isRTL ? 'rtl' : 'ltr'}>
+                {SetStartDatetimeButton}
                 <div className='range-label-badge'></div>{startLabelForStep + ' - ' + endLabelForStep}
               </div>
               {zoomButtons}
