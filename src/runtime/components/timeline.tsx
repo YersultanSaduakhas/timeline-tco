@@ -809,6 +809,8 @@ const SetStartDatetimeButton = React.useMemo(() => {
             var endTime_ = rangeStartTime+(interval_*1000*rangeInterval);
             setStartTimeForStep(rangeStartTime)
             setEndTimeForStep(endTime_); 
+            setEndTimeForTempStep(endTime_);
+            onTimeChanged(rangeStartTime, endTime_)
             setShowStartDatetimePopper(false)
           }}
         >
