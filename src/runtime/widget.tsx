@@ -1,7 +1,7 @@
 /** @jsx jsx */
 import {
   React, type AllWidgetProps, jsx, type DataSource, ReactResizeDetector, MultipleDataSourceComponent, type IMDataSourceInfo, DataSourceStatus,
-  type MapServiceDataSource, DataSourceManager, Immutable, DataSourceTypes, AllDataSourceTypes, css, hooks, getAppStore
+  type MapServiceDataSource, DataSourceManager, Immutable, DataSourceTypes, AllDataSourceTypes, css, hooks, getAppStore,appActions
 } from 'jimu-core'
 import { type FeatureLayerDataSource, type JimuLayerView, type JimuMapView, loadArcGISJSAPIModules, MapViewManager } from 'jimu-arcgis'
 import { Alert, WidgetPlaceholder } from 'jimu-ui'
@@ -339,7 +339,14 @@ const Widget = (props: TimelineProps) => {
               speed={speed}
               autoPlay={autoPlay}
               applied={applied}
-              onTimeChanged={(sTime, eTime) => { setTimeExtent([sTime, eTime]) }}
+              onTimeChanged={(sTime, eTime) => { 
+                setTimeExtent([sTime, eTime]);  
+                let sendData = {
+                  startDate: sTime?new Date(sTime).toLocaleDateString():'',
+                  endDate: eTime?new Date(eTime).toLocaleDateString():''
+                };
+                getAppStore().dispatch(appActions.widgetStatePropChange('pTimeLineTcoId', 'pTimeLineTcoDates', sendData))
+              }}
               onApplyStateChanged={applied => { setApplied(applied) }}
             />
         }

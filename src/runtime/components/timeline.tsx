@@ -6,6 +6,7 @@ import {
   AppMode,
   lodash,
   getAppStore,
+  appActions,
   hooks
 } from 'jimu-core'
 import {
