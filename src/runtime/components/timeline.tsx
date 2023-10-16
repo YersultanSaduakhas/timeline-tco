@@ -36,7 +36,8 @@ import { SpeedOutlined } from 'jimu-icons/outlined/application/speed'
 import { TimeSpeed, TimeStyle } from '../../config'
 import { getTimelineStyles } from './style'
 import { DATE_PATTERN, SPEED_VALUE_PAIR, TIME_PATTERN } from '../../utils/utils'
-import { RepairFilled } from 'jimu-icons/filled/editor/repair'
+
+import { EditOutlined } from 'jimu-icons/outlined/editor/edit'
 const arrowIcon = require('./assets/icons/arrow.svg')
 const allDefaultMessages = Object.assign({}, defaultMessages, jimuCoreMessages, jimuUIMessages)
 
@@ -63,12 +64,14 @@ export interface TimelineProps {
   speed?: TimeSpeed
   autoPlay?: boolean
   updating?: boolean
-
+  onUpdateStepLength: (stepLength_: any, startTime: number) => void,
+  updateStartTime: (startTime: number) => void,
+  updateEndTime: (endTime: number) => void,
   onTimeChanged?: (startTime: number, endTime: number) => void
   onApplyStateChanged?: (applied: boolean) => void
 }
 
-function TimeLine (props: TimelineProps) {
+function TimeLine(props: TimelineProps) {
   const {
     width: _width,
     height: _height,
@@ -78,6 +81,8 @@ function TimeLine (props: TimelineProps) {
     enablePlayControl = false, speed: _speed = TimeSpeed.Medium, autoPlay: _autoPlay, updating = false, onTimeChanged, onApplyStateChanged
   } = props
 
+  
+  const [innerStepLength,setInnerStepLength] = React.useState<DateUnitInputValue>(stepLength);
   const [width, setWidth] = React.useState(_width) // the width of the visible ruler
   const [height, setHeight] = React.useState(_height)
   React.useEffect(() => {
@@ -97,19 +102,15 @@ function TimeLine (props: TimelineProps) {
     { value: TimeSpeed.Fast, label: messages('fast') },
     { value: TimeSpeed.Fastest, label: messages('fastest') }
   ]
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  , [])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    , [])
 
-
+  //-------custom code start------------
   const [rangeStartTime, setRangeStartTime] = React.useState()
   const rangeUnits = ['year', 'month', 'day', 'hour', 'minute']
   const [rangeUnit, setRangeUnit] = React.useState('day')
-  // React.useEffect(() => {
-  //   setRangeUnit(rangeUnit)
-  // }, [rangeUnit])
-
-  
   const [rangeInterval, setRangeInterval] = React.useState(1)
+  //-------custom code start------------
 
   const [speed, setSpeed] = React.useState(_speed)
   React.useEffect(() => {
@@ -148,9 +149,10 @@ function TimeLine (props: TimelineProps) {
 
   const infoIconRef = React.useRef<HTMLButtonElement>(null)
   const [showInfoPopper, setShowInfoPopper] = React.useState(false)
+
   const startDatetimeIconRef = React.useRef<HTMLButtonElement>(null)
   const [showStartDatetimePopper, setShowStartDatetimePopper] = React.useState(false)
-  
+
   const arrowAction = React.useRef<boolean>(false)
   const preventTouceMove = (evt) => {
     if (window.jimuConfig.isInBuilder && arrowAction.current && (evt.key.includes('Arrow'))) {
@@ -170,17 +172,17 @@ function TimeLine (props: TimelineProps) {
     startRef.current.addEventListener('blur', arrowBlurEvent, true)
     endRef.current.addEventListener('focus', arrowFocusEvent, true)
     endRef.current.addEventListener('blur', arrowBlurEvent, true)
-    function arrowFocusEvent (evt) {
+    function arrowFocusEvent(evt) {
       arrowAction.current = true
     }
-    function arrowBlurEvent (evt) {
+    function arrowBlurEvent(evt) {
       arrowAction.current = false
     }
-    function startArrowEvent (evt) {
+    function startArrowEvent(evt) {
       evt.edges = { left: true }
       updateValuesByArrowKey(evt)
     }
-    function endArrowEvent (evt) {
+    function endArrowEvent(evt) {
       evt.edges = { right: true }
       updateValuesByArrowKey(evt)
     }
@@ -210,11 +212,11 @@ function TimeLine (props: TimelineProps) {
       const resizeProps = getResizeProps()
       let newStart = resizeProps.startValue
       let newEnd = resizeProps.endValue
-      if (stepLength) {
+      if (innerStepLength) {
         if (evt.edges.left) {
-          newStart = getNewValueByAccuracy(stepLength.unit, new Date(resizeProps.startValue), diff * stepLength.val)
+          newStart = getNewValueByAccuracy(innerStepLength.unit, new Date(resizeProps.startValue), diff * innerStepLength.val)
         } else {
-          newEnd = getNewValueByAccuracy(stepLength.unit, new Date(resizeProps.endValue), diff * stepLength.val)
+          newEnd = getNewValueByAccuracy(innerStepLength.unit, new Date(resizeProps.endValue), diff * innerStepLength.val)
         }
       } else { // divided
         const _accuracy = (resizeProps.extent[1] - resizeProps.extent[0]) / dividedCount
@@ -254,7 +256,7 @@ function TimeLine (props: TimelineProps) {
     setAutoPlay(_autoPlay)
     setEndTimeForTempStep(null)
     setStartTimeForStep(startTime)
-    const _endTime = cumulatively ? startTime : getStepEndTimeForTarget(startTime, endTime, startTime, stepLength, dividedCount)
+    const _endTime = cumulatively ? startTime : getStepEndTimeForTarget(startTime, endTime, startTime, innerStepLength, dividedCount)
     setEndTimeForStep(_endTime)
 
     if (updating) {
@@ -266,6 +268,11 @@ function TimeLine (props: TimelineProps) {
     } else {
       onTimeChanged(startTime, _endTime)
     }
+
+    debugger;
+    setInnerStepLength(stepLength);
+    setRangeInterval(stepLength.val);
+    setRangeUnit(stepLength.unit);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [_autoPlay, startTime, cumulatively, endTime, accuracy, stepLength, dividedCount])
 
@@ -438,7 +445,7 @@ function TimeLine (props: TimelineProps) {
   }, [zoomLevel, startTime, endTime, leftPosition, width, startTimeForStep, endTimeForStep, endTimeForTempStep, maxWidthAndZoomLevel])
 
   const onPreviousOrNextClick = React.useCallback((isNext) => {
-    const nextEndETime = getStepEndTimeForTarget(startTime, endTime, endTimeForStep, stepLength, dividedCount, isNext)
+    const nextEndETime = getStepEndTimeForTarget(startTime, endTime, endTimeForStep, innerStepLength, dividedCount, isNext)
     let newSTime = startTime
     let newETime = endTime
     if (cumulatively) {
@@ -466,7 +473,7 @@ function TimeLine (props: TimelineProps) {
         setEndTimeForTempStep(null)
       }
     } else {
-      const nextStartTime = getStepEndTimeForTarget(startTime, endTime, startTimeForStep, stepLength, dividedCount, isNext)
+      const nextStartTime = getStepEndTimeForTarget(startTime, endTime, startTimeForStep, innerStepLength, dividedCount, isNext)
       //Only display part of current step.
       const keepPartOutOfRight = nextStartTime < endTime && nextEndETime > endTime
       //RTL-case 1 : Keet it when clicking previous-btn and focusing on the first step.
@@ -509,7 +516,7 @@ function TimeLine (props: TimelineProps) {
 
     onTimeChanged(newSTime, newETime)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dividedCount, endTime, endTimeForStep, startTime, startTimeForStep, stepLength, cumulatively, onTimeChanged, updateLeftPositionByPlay])
+  }, [dividedCount, endTime, endTimeForStep, startTime, startTimeForStep, innerStepLength, cumulatively, onTimeChanged, updateLeftPositionByPlay])
 
   const stopPlay = React.useCallback(() => { // no hooks variable used
     if (playRef.current) {
@@ -711,117 +718,153 @@ function TimeLine (props: TimelineProps) {
         </div>
       </Popper>
 
-      </React.Fragment>
+    </React.Fragment>
   }, [messages, startTime, endTime, intl, showInfoPopper, applied, onApplyStateChanged])
 
-//New Set start date time
+  //New Set start date time
 
-const SetStartDatetimeButton = React.useMemo(() => {
-  //const startLabel = dateUtils.formatDateLocally(startTime, intl, DATE_PATTERN, TIME_PATTERN)
-  //const endLabel = dateUtils.formatDateLocally(endTime, intl, DATE_PATTERN, TIME_PATTERN)
-  return <React.Fragment>
-    <Button icon type='tertiary' onClick={evt => { setShowStartDatetimePopper(!showStartDatetimePopper) }} ref={ref => { startDatetimeIconRef.current = ref }}>
-      <RepairFilled />
-    </Button>
-    <Popper
-      open={showStartDatetimePopper}
-      keepMount
-      showArrow
-      reference={startDatetimeIconRef}
-      toggle={(showStartDatetimePopper) => {
-        setShowStartDatetimePopper(!showStartDatetimePopper)
-        lodash.defer(() => {
-          startDatetimeIconRef.current.focus()
-        })
-      }}>
-      <div className='p-3'>
-        <Label check className='d-flex align-items-center'>
-          <h6 className='flex-grow-1 mb-0 mr-1'>Start time:</h6>
-          <DatePicker
-            aria-label="Start datetime"
-            format="shortDateLongTime"
-            isTimeLong
-            onChange={(value) => {
-              if(value >=startTime&&value <=endTime){
-                setRangeStartTime(value)
-              }else{
-                alert("selected date out of range!")
-              }
-            }}
-            selectedDate={new Date(rangeStartTime)}
-            showDoneButton
-            showTimeInput
-            strategy="absolute"
-            supportVirtualDateList
-            maxDate={new Date(endTime)}
-            minDate={new Date(startTime)}
-            virtualDateList={[
-              'NOW',
-              'YESTERDAY'
-            ]}
-          />
-        </Label>
-        <Label check className='d-flex align-items-center'>
-          <h6 className='flex-grow-1 mb-0 mr-1'>Interval:</h6>
-          <div style={{display: 'flex', gap: '10px'}}>
-              <NumericInput value={rangeInterval}
-              onChange={(value) => {setRangeInterval(value)}}
-              style={{ marginTop:'3px', width:'140px'}} defaultValue="10" size="sm" />
-              <Dropdown> 
-              <DropdownButton>
-                {rangeUnit}
-              </DropdownButton>
-                <DropdownMenu>
-                {
-                  rangeUnits.map(item => {
-                    return <DropdownItem
-                      key={item}
-                      value={item}
-                      active={item === rangeUnit}
-                      onClick={evt => { setRangeUnit(evt.target.value) }}
-                    >
-                      {item}
-                    </DropdownItem>
-                  })
+  //-------custom code start------------
+  const SetStartDatetimeButton = React.useMemo(() => {
+    //const startLabel = dateUtils.formatDateLocally(startTime, intl, DATE_PATTERN, TIME_PATTERN)
+    //const endLabel = dateUtils.formatDateLocally(endTime, intl, DATE_PATTERN, TIME_PATTERN)
+    return <React.Fragment>
+      <Button icon type='tertiary' onClick={evt => { setShowStartDatetimePopper(!showStartDatetimePopper) }} ref={ref => { startDatetimeIconRef.current = ref }}>
+        <EditOutlined />
+      </Button>
+      <Popper
+        open={showStartDatetimePopper}
+        placement={'top-end'}
+        keepMount
+        showArrow
+        reference={startDatetimeIconRef}
+        toggle={(showStartDatetimePopper) => {
+          setShowStartDatetimePopper(!showStartDatetimePopper)
+          lodash.defer(() => {
+            startDatetimeIconRef.current.focus()
+          })
+        }}>
+        <div className='p-3'>
+          <Label check className='d-flex align-items-center'>
+            <h6 className='flex-grow-1 mb-0 mr-1'>Start time:</h6>
+            <DatePicker
+              aria-label="Start datetime"
+              format="shortDateLongTime"
+              isTimeLong
+              onChange={(value: any) => {
+                if (!value) {
+                  setRangeStartTime(null);
+                  return;
                 }
-              </DropdownMenu>
-            </Dropdown>
-            </div>
-        </Label>
-        <Button
-          size="default"
-          type="primary"
-          onClick={evt => { 
-            var interval_ = 60;
-            switch (rangeUnit) {
-              case 'hour':
-                interval_ = 3600;
-                break;
-              case 'day':
-                interval_ = 24*3600;
-                break;
-              case 'month':
-                interval_ = 30*24*3600;
-                break;
-              case 'year':
-                interval_ = 365*24*3600;
-                break;          
-            };
-            var endTime_ = rangeStartTime+(interval_*1000*rangeInterval);
-            setStartTimeForStep(rangeStartTime)
-            setEndTimeForStep(endTime_); 
-            setEndTimeForTempStep(endTime_);
-            onTimeChanged(rangeStartTime, endTime_)
-            setShowStartDatetimePopper(false)
-          }}
-        >
-          Apply
-        </Button>        
-      </div>
-    </Popper>
-    </React.Fragment>
-}, [messages, startTime, endTime,rangeInterval,rangeUnit, rangeStartTime, showStartDatetimePopper])
+                let val_ = 0;
+                if (value == "NOW") {
+                  val_ = new Date().getTime();
+                } else if (value == "YESTERDAY") {
+                  val_ = new Date(Date.now() - 86400000).getTime();
+                } else {
+                  val_ = value;
+                }
 
+                if (val_ < startTime || val_ > endTime) {
+                  alert("selected date out of range!")
+                  return;
+                }
+
+                // if (val_ < startTime) {
+                //   props.updateStartTime(val_);
+                // }
+                // if (val_ > endTime) {
+                //   props.updateEndTime(val_);
+                // }
+                //}
+                setRangeStartTime(val_);
+              }}
+              selectedDate={new Date(rangeStartTime)}
+              showDoneButton
+              showTimeInput
+              strategy="absolute"
+              supportVirtualDateList
+              // maxDate={new Date(endTime)}
+              // minDate={new Date(startTime)}
+              virtualDateList={[
+                'NOW',
+                'YESTERDAY'
+              ]}
+            />
+          </Label>
+          <Label check className='d-flex align-items-center'>
+            <h6 className='flex-grow-1 mb-0 mr-1'>Interval:</h6>
+            <div style={{ display: 'flex', }}>
+              <NumericInput value={rangeInterval}
+                onChange={(value) => { setRangeInterval(value) }}
+                style={{ marginRight: '6px', marginTop: '5px', width: '100px' }} defaultValue="10" size="sm" />
+              <Dropdown>
+                <DropdownButton
+                  style={{ marginTop: '5px', minWidth: '100px' }}
+                  size="sm">
+                  {rangeUnit}
+                </DropdownButton>
+                <DropdownMenu>
+                  {
+                    rangeUnits.map(item => {
+                      return <DropdownItem
+                        key={item}
+                        value={item}
+                        active={item === rangeUnit}
+                        onClick={evt => { setRangeUnit(evt.target.value) }}
+                      >
+                        {item}
+                      </DropdownItem>
+                    })
+                  }
+                </DropdownMenu>
+              </Dropdown>
+            </div>
+          </Label>
+          <Button
+            style={{ margin: '5px', float: 'right' }}
+            size="sm"
+            type="primary"
+            onClick={evt => {
+              var interval_ = 60;
+              var unit_ = "minute";
+              switch (rangeUnit) {
+                case 'hour':
+                  interval_ = 3600;
+                  unit_ = "hour";
+                  break;
+                case 'day':
+                  interval_ = 24 * 3600;
+                  unit_ = "day";
+                  break;
+                case 'month':
+                  unit_ = "month";
+                  interval_ = 30 * 24 * 3600;
+                  break;
+                case 'year':
+                  unit_ = "year";
+                  interval_ = 365 * 24 * 3600;
+                  break;
+              };
+              //@ts-ignore
+              var endTime_ = rangeStartTime + (interval_ * 1000 * rangeInterval);
+              setStartTimeForStep(rangeStartTime)
+              setEndTimeForStep(endTime_);
+              setEndTimeForTempStep(endTime_);
+              onTimeChanged(rangeStartTime, endTime_)
+              setShowStartDatetimePopper(false)
+              //debugger;;
+              setInnerStepLength({ unit: unit_, val: rangeInterval })
+              //console.log(stepLength);
+            }}
+          >
+            Apply
+          </Button>
+        </div>
+      </Popper>
+
+    </React.Fragment>
+  }, [messages, startTime, endTime, rangeInterval, rangeUnit, rangeStartTime, showStartDatetimePopper])
+  //-------custom code end------------
 
   const SpeedDropdown = React.useMemo(() => {
     return <Dropdown activeIcon>
@@ -830,7 +873,7 @@ const SetStartDatetimeButton = React.useMemo(() => {
           icon type='tertiary' arrow={false}
           aria-label={messages('speed')}
           a11y-description={speedItems.filter(item => item.value === speed)[0].label}
-         >
+        >
           <SpeedOutlined />
         </DropdownButton>
       </Tooltip>
@@ -987,10 +1030,10 @@ const SetStartDatetimeButton = React.useMemo(() => {
                 }
               </div>
               <div className='timeline-right'>
-                  <div className='play-container'>
-                    {enablePlayControl && SpeedDropdown}
-                    {playButton}
-                  </div>
+                <div className='play-container'>
+                  {enablePlayControl && SpeedDropdown}
+                  {playButton}
+                </div>
               </div>
             </div>
           </React.Fragment>
